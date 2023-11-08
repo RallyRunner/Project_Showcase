@@ -1,10 +1,4 @@
 streamlit
 pandas
 pathlib
-random
 numpy
-copy
-functools
-time
-csv
-pickle
