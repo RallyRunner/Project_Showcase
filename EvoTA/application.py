@@ -104,7 +104,7 @@ except:
 
 #view solution
 with st.form(key="view_sol"):
-    solution_value = st.number_input("Pick a solution to view", 0, 15)
+    solution_value = st.number_input("Pick a solution to view", 0, 100)
     submit = st.form_submit_button('View Solution')
     if submit:
         best_sol = view_result()
