@@ -58,7 +58,6 @@ num_rows = len(section_df_edited.index)
 
 #TA Data
 st.header("TA Data")
-"""Need to include adjustable number of TAs & auto adjust section to # of sections inputted"""
 #create adjustable ta_cols
 ta_cols = ["ta_id", "name", "max_assigned"]
 for i in range(num_rows):
