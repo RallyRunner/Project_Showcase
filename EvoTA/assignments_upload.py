@@ -199,7 +199,7 @@ def main(sectionData, taData):
 
     # run the evolver(runlength (in mins), dom, status)
     #replaced n iterations with run length
-    E.evolve(0.5,100, 10000)
+    E.evolve(1,100, 10000)
 
     # print final results
     print(E)
