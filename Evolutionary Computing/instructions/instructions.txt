@@ -1,0 +1,11 @@
+This app uses evolutionary computing algorithms to solve a common resource allocation problem:
+assigning teaching assistants to sections based on their own schedule preferences.
+
+
+Instructions:
+1. To run the solver, there are two csv files needed. Both examples of the files are shown below. First is the Sections csv where information about the class times, minimum, and maximum TAs required.
+Second is the TA schedule csv which includes information about the maximum sections they want to TA, and their section preferences. In this table, U = Unavailable, W = Willing, P = Preferred.
+2. The two csv files can either be manually filled out the in the respective tabs or uploaded directly via csv.
+3. Once the csv files are ready, head to the "Results" tab and click "Solve". Wait a few seconds.
+4. A table with various solutions will be displayed, and you can input which solution to visualize.
+5. The visualized solution is an array where each row is the TA_id and each column is the section id. Each 1 shown is the section they are assigned to. Enjoy!
