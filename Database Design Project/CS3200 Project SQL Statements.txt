@@ -1,0 +1,256 @@
+-- Group Members: Dilan Bhat, Jessica Yu, Nicholas Lin, Olivia Agatep
+
+-- Inserting tuples:
+DROP TABLE IF EXISTS Amenity;
+DROP TABLE IF EXISTS Rent;
+DROP TABLE IF EXISTS RepairedAt;
+DROP TABLE IF EXISTS Vehicle;
+DROP TABLE IF EXISTS ParkingLot;
+DROP TABLE IF EXISTS Customer;
+DROP TABLE IF EXISTS Dealership;
+DROP TABLE IF EXISTS Employee;
+DROP TABLE IF EXISTS RepairShop;
+
+CREATE TABLE Employee (
+eid int,
+phoneNumber VARCHAR(24),
+PRIMARY KEY (eid)
+);
+
+INSERT INTO Employee VALUES(1, '8572119550');
+INSERT INTO Employee VALUES(2, '8372321320');
+INSERT INTO Employee VALUES(3, '6572221690');
+
+CREATE TABLE Customer(
+cid int,
+phoneNumber varchar(24),
+name varchar(100),
+location varchar(100),
+PRIMARY KEY (cid)
+);
+
+INSERT INTO Customer VALUES(1,'2092007623','James Jones','13 Fenway Dr');
+INSERT INTO Customer VALUES(2,'6268417129','Bob Smith','32 Lawn St');
+INSERT INTO Customer VALUES(3,'8901233345','Kevin Adams','53 Hillside St');
+INSERT INTO Customer VALUES(4,'3201246790','Eric Kim','20 Boston St');
+
+CREATE TABLE ParkingLot(
+pid int,
+eid int NOT NULL,
+capacity int,
+address varchar(100),
+PRIMARY KEY (pid),
+FOREIGN KEY(eid) REFERENCES employee(eid)
+);
+
+INSERT INTO ParkingLot VALUES(1, 3, 50,'30 Fenway Dr');
+INSERT INTO ParkingLot VALUES(2, 2, 25,'60 Lawn St');
+INSERT INTO ParkingLot VALUES(3, 1, 100,'100 Ruggles Ave');
+
+CREATE TABLE Dealership(
+did int,
+address varchar(100),
+phoneNumber varchar(24),
+rating int,
+PRIMARY KEY (did)
+);
+
+INSERT INTO Dealership VALUES(1,'100 Fenway Dr','8904563235',5);
+INSERT INTO Dealership VALUES(2,'60 Lawn St','2344128235',4);
+INSERT INTO Dealership VALUES(3,'90 Hillside St','2304157289',3);
+
+CREATE TABLE RepairShop(
+rsid int,
+address varchar(100),
+phoneNumber varchar(24),
+rating int,
+PRIMARY KEY (rsid)
+);
+
+INSERT INTO RepairShop VALUES(1,'30 Park Dr', '2331577312', 4);
+INSERT INTO RepairShop VALUES(2,'99 Boylston St', '2332347312', 4);
+INSERT INTO RepairShop VALUES(3,'15 Hillside St', '1234446677', 4);
+
+CREATE TABLE Vehicle (
+vid int,
+did int NOT NULL,
+pid int NOT NULL,
+supplyPrice int,
+licensePlateNum varchar(7),
+rentalPrice int,
+mileage int,
+gas int,
+physical varchar(100),
+numberOfSeats int,
+height int,
+numberWheels int,
+PRIMARY KEY(vid),
+FOREIGN KEY(did) REFERENCES dealership(did),
+FOREIGN KEY(pid) REFERENCES parkinglot(pid)
+);
+
+INSERT INTO Vehicle VALUES(1, 1, 1, 80000, 'LY1234', 30, 100, 100, 'Good', 4, 5, 4);
+INSERT INTO Vehicle VALUES(2, 2, 3, 95000, 'TY4234', 60, 50, 100, 'Good',4, 5, 6);
+INSERT INTO Vehicle VALUES(3, 3, 1, 60000, 'SP1111', 25, 340, 95, 'Damaged',6, 5, 4);
+INSERT INTO Vehicle VALUES(4, 3, 1, 75000, 'SK1234', 45, 120, 90, 'Good',4, 3, 4);
+INSERT INTO Vehicle VALUES(5, 2, 3, 85000, 'SZ2112', 40, 110, 100, 'Good',4, 6, 4);
+INSERT INTO Vehicle VALUES(6, 2, 3, 90000, 'PRT112', 50, 110, 100, 'Damaged',4, 6, 4);
+INSERT INTO Vehicle VALUES(7, 2, 3, 50000, 'ABC112', 45, 120, 100, 'Damaged',4, 6, 4);
+
+
+CREATE TABLE RepairedAt (
+vid int,
+rsid int,
+dateOut timestamp,
+dateBack timestamp,
+description varchar(100),
+PRIMARY KEY(dateOut, vid, rsid),
+FOREIGN KEY(vid) REFERENCES vehicle(vid),
+FOREIGN KEY(rsid) REFERENCES repairshop(rsid)
+);
+
+INSERT INTO RepairedAt VALUES(3,1,'2022/12/06', '2022/12/12','Wheel popped');
+INSERT INTO RepairedAt VALUES(7,1,'2022/12/09', '2022/12/12','Lights broken');
+INSERT INTO RepairedAt VALUES(6,2,'2022/12/08', '2022/12/12','Engine Leak');
+
+CREATE TABLE Rent (
+vid int,
+cid int,
+eid int,
+rentalDate timestamp,
+returnDate timestamp,
+price int,
+PRIMARY KEY (rentalDate, vid, cid, eid),
+FOREIGN KEY(vid) REFERENCES vehicle(vid),
+FOREIGN KEY(cid) REFERENCES customer(cid),
+FOREIGN KEY(eid) REFERENCES employee(eid)
+);
+
+INSERT INTO Rent VALUES(1,2,1,'2022/12/06', '2022/12/09',60);
+INSERT INTO Rent VALUES(5,4,2,'2022/12/08','2022/12/10',80);
+
+CREATE TABLE Amenity (
+vid int,
+type varchar(100),
+PRIMARY KEY (type, vid),
+FOREIGN KEY(vid) REFERENCES vehicle(vid)
+);
+
+INSERT INTO Amenity VALUES(1,'Bluetooth');
+INSERT INTO Amenity VALUES(2,'Heated Seats');
+INSERT INTO Amenity VALUES(3,'Cruise Control');
+
+
+-- Queries (See report for explanations)
+
+-- 1
+
+SELECT Customer.name, sum(price)
+FROM Vehicle, Rent, Customer
+WHERE Vehicle.VID = Rent.VID
+AND Rent.CID = Customer.CID
+GROUP BY Customer.CID
+ORDER BY sum(price) asc
+
+-- 2
+
+WITH X as (SELECT Rent.vid vehicleID, count(*) numTimesRented
+FROM Rent
+GROUP BY Rent.vid)
+
+SELECT *
+FROM X
+WHERE X.numTimesRented = (SELECT max(numTimesRented)
+  		   FROM X)
+
+-- 3
+
+WITH X as (SELECT Employee.eid idNum, sum(price) totalSales
+FROM Employee, Rent
+WHERE Employee.eid = Rent.eid
+GROUP BY Employee.eid)
+
+SELECT *
+FROM X
+UNION
+SELECT Employee.eid, 0 totalSales
+FROM Employee
+WHERE Employee.eid NOT IN (
+SELECT idNum
+FROM X)
+ORDER BY totalSales desc
+
+-- 4
+
+SELECT Vehicle.vid vehicleID, count(*) numRepairs
+FROM Vehicle, RepairedAt
+WHERE Vehicle.vid = RepairedAt.vid
+GROUP BY Vehicle.vid
+ORDER BY count(*) desc
+
+-- 5
+
+SELECT C.cid CustomerId, C.Name CustomerName, E.eid EmployeeId, V.vid VehicleId, R.RentalDate
+FROM Vehicle V, Rent R, Employee E, Customer C
+WHERE V.did = 1
+AND R.vid = V.vid
+AND E.eid = R.eid
+AND C.cid = R.cid
+
+-- 6
+
+SELECT P.pid, P.address, count(*) numCars
+FROM Parkinglot P, Vehicle V
+WHERE V.pid = P.pid
+GROUP BY P.pid
+HAVING count(*) >= 2
+
+-- 7
+
+SELECT V.vid, status, licenseplatenum, V.rentalprice, Amenity.type amenityType
+FROM Vehicle V
+LEFT JOIN
+Amenity ON V.vid=Amenity.vid
+WHERE status = 'Available'
+AND type = 'Bluetooth'
+
+-- 8
+
+SELECT Customer.name, Amenity.type, count(*)
+FROM Customer, Rent, Amenity, Vehicle
+WHERE Vehicle.vid = Rent.vid
+AND Amenity.vid = Vehicle.vid
+AND Customer.cid = Rent.cid
+GROUP BY Customer.cid, Amenity.type
+ORDER BY count(*)
+
+-- 9
+
+WITH X as (SELECT RS.rsid, RS.address, RS.rating, count(*) numRepairs
+FROM RepairedAt RA, RepairShop RS
+WHERE RA.rsid = RS.rsid
+GROUP BY RS.rsid)
+
+SELECT * FROM X
+UNION
+SELECT RS.rsid, RS.address, RS.rating, 0
+FROM RepairShop RS
+WHERE RS.rsid NOT IN (SELECT rsid FROM X)
+ORDER BY numRepairs desc
+
+
+-- Transactions (Insert/Modifications, See report for explanations)
+
+-- 1
+
+START TRANSACTION;
+    INSERT INTO Rent VALUES (2,1,1, CURRENT_DATE, '2022/12/31',80);
+COMMIT;
+
+-- 2
+
+START TRANSACTION;
+    INSERT INTO RepairedAt VALUES (2,1,CURRENT_DATE, '2022/12/25');
+    UPDATE Vehicle SET physical = 'Damaged'
+    WHERE Vehicle.vid = 4;
+COMMIT;
