@@ -1,5 +1,5 @@
 # MIDS Data Science Portfolio
-Collective repository of personal &amp; collaborative projects I've done during the MIDS program.
+Collective repository of personal &amp; collaborative projects I've done during the MIDS program at UC Berkeley & during my undergraduate studies at Northeastern University.
 
 # Projects
 ### Database Design Project
