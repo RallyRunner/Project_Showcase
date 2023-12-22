@@ -12,4 +12,4 @@ Programming project using Object Oriented Programming and Evolutionary Computing
 Projects related to statistical concepts using R.  
 
 ### Research Design
-A research design proposal to propose a study on bird collisions due to light pollution
+A research design proposal to propose a study on bird collisions due to light pollution.
