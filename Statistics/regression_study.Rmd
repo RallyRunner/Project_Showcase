@@ -1,0 +1,239 @@
+---
+title: "Lab2_Modeling"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+date: "2023-12-04"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, echo = FALSE, message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mltools)
+library(data.table)
+library(stargazer)
+```
+
+```{r source data and label ingredients, echo = FALSE, message=FALSE}
+# Load the dataset
+data_df <- read_xlsx("../data/external/Data Model - Pizza Sales.xlsx")
+data_df$order_date <- as.integer(data_df$order_date)
+data_df$order_date <- as.Date("1899-12-30") + data_df$order_date
+
+pizza_labels <- unique(data_df$pizza_name)
+
+ingredient_dict <- data_df %>% 
+                    group_by(pizza_name)  %>%
+                    filter(row_number()==1)
+ingredient_dict <- ingredient_dict %>% select(pizza_name, pizza_ingredients)
+ingredient_list <- ingredient_dict[1, 'pizza_ingredients']
+for (row in 2:nrow(ingredient_dict)) {
+    ingredient_list <- paste(ingredient_list, ingredient_dict[row, 'pizza_ingredients'], sep=", ")
+}
+ingredient <- unique(unlist(strsplit(ingredient_list, ', ')))
+ingredient <- relist(sort(ingredient), ingredient)
+
+is_meat <- c(FALSE, TRUE, FALSE, FALSE, FALSE,
+             FALSE, TRUE, FALSE, TRUE, TRUE, 
+             FALSE, FALSE, TRUE, TRUE, FALSE, 
+             TRUE, FALSE, TRUE, FALSE, TRUE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, TRUE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, TRUE, FALSE, FALSE, 
+             TRUE, FALSE, FALSE, FALSE, FALSE,
+             
+             TRUE, FALSE, FALSE, TRUE, TRUE, 
+             FALSE, FALSE, FALSE, TRUE, TRUE, 
+             
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             TRUE, FALSE, TRUE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, TRUE)
+
+is_sauce <- c(TRUE, FALSE, FALSE, FALSE, FALSE,
+             FALSE, FALSE, TRUE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, TRUE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             TRUE, FALSE, FALSE, FALSE, FALSE, 
+             
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             TRUE, FALSE, FALSE, FALSE, FALSE)
+
+is_alt_cheese <- c(FALSE, FALSE, FALSE, FALSE, FALSE,
+             TRUE, FALSE, FALSE, FALSE, FALSE, 
+             TRUE, TRUE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, TRUE, TRUE, FALSE, 
+             FALSE, FALSE, TRUE, TRUE, TRUE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             
+             FALSE, TRUE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             
+             TRUE, FALSE, FALSE, TRUE, TRUE, 
+             FALSE, TRUE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, FALSE)
+
+is_veggie <- c(FALSE, FALSE, TRUE, TRUE, TRUE,
+             FALSE, FALSE, FALSE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, FALSE, TRUE, 
+             FALSE, FALSE, FALSE, TRUE, FALSE, 
+             TRUE, TRUE, FALSE, FALSE, TRUE, 
+             TRUE, FALSE, FALSE, FALSE, FALSE, 
+             TRUE, TRUE, FALSE, TRUE, TRUE, 
+             FALSE, FALSE, TRUE, TRUE, TRUE, 
+             
+             FALSE, FALSE, TRUE, FALSE, FALSE, 
+             FALSE, TRUE, TRUE, FALSE, FALSE, 
+             
+             FALSE, TRUE, TRUE, FALSE, FALSE, 
+             FALSE, FALSE, FALSE, TRUE, TRUE, 
+             FALSE, TRUE, TRUE, TRUE, FALSE)
+
+# Define a vector of meat ingredients
+meat_ingredients <- c("Sliced Ham", "Pepperoni", "Bacon", "Calabrese Salami", "Barbecued Chicken", 
+                      "Italian Sausage", "Chorizo Sausage", "Prosciutto", "慛duja Salami", "Pancetta", 
+                      "Chicken", "Beef Chuck Roast", "Capocollo", "Genoa Salami", "Prosciutto di San Daniele", 
+                      "Coarse Sicilian Salami", "Luganega Sausage", "Soppressata Salami")
+
+# Create indicator columns for each type of meat
+for (meat in meat_ingredients) {
+  indicator_column <- paste0("meat_", gsub("\\s", "_", tolower(meat)))
+  data_df[[indicator_column]] <- grepl(meat, data_df$pizza_ingredients)
+}
+
+indgredient_type <- data.frame(ingredient, is_meat, is_sauce, is_alt_cheese, is_veggie)
+#write.csv(indgredient_type, 'ingredient_classification.csv')
+```
+
+```{r create ingredient type dictionary, echo = FALSE}
+meat_count = c()
+alt_cheese_count = c()
+alt_sauce_count = c()
+veggie_count = c()
+ingredeint_count = c()
+for (row in 1:nrow(ingredient_dict)) {
+  ingredients = toString(ingredient_dict[row, 'pizza_ingredients'])
+  meat = 0
+  alt_cheese = 0
+  alt_sauce = 0
+  veggie = 0
+  ingredeint = 0
+  for (ingredient in unlist(strsplit(ingredients, ", "))) {
+    ingredient_data = indgredient_type[indgredient_type$ingredient == ingredient,]
+    meat = meat + ingredient_data$is_meat
+    alt_cheese = alt_cheese + ingredient_data$is_alt_cheese
+    alt_sauce = alt_sauce + ingredient_data$is_sauce
+    veggie = veggie + ingredient_data$is_veggie
+    ingredeint = ingredeint + 1
+  }
+  meat_count = append(meat_count, meat) 
+  alt_cheese_count = append(alt_cheese_count, alt_cheese) 
+  alt_sauce_count = append(alt_sauce_count, alt_sauce) 
+  veggie_count = append(veggie_count, veggie)
+  ingredeint_count = append(ingredeint_count, ingredeint)
+}
+pizza_name <-  ingredient_dict$pizza_name
+pizza_ingredients <- ingredient_dict$pizza_ingredients
+# Could include ingredients below
+pizza_contents <- data.frame(pizza_name, ingredeint_count, meat_count, alt_cheese_count, alt_sauce_count, veggie_count)     
+```
+
+```{r create model data, echo = FALSE}
+prepare_data <- function(df, pizza_contents) {
+  df$month <- substr(df$order_date, start = 6, stop = 7)
+  df <- df %>%
+    select(month, total_price, pizza_name, starts_with("meat_")) %>%
+    group_by(pizza_name, month) %>%
+    summarise(across(starts_with("meat_"), sum),
+              total_sales = sum(total_price),
+              .groups = 'drop')
+  df <- merge(df, pizza_contents, by = "pizza_name", all = TRUE, sort = TRUE)
+  df$is_vegetarian <- (df$meat_count == 0)
+  df$alt_cheese <- (df$alt_cheese_count != 0)
+  df$alt_sauce <- (df$alt_sauce_count != 0)
+  months_col <- df$month
+  df$month <- as.factor(df$month)
+  df <- one_hot(as.data.table(df))
+  df$month <- as.numeric(months_col)
+  df$meat_count2 <- (df$meat_count)^2
+  return(df)
+}
+
+model_data <- prepare_data(data_df, pizza_contents)
+
+sample <- sample(c(TRUE, FALSE), nrow(model_data), replace=TRUE, prob=c(0.75,0.25))
+model  <- model_data[sample, ]
+explore   <- model_data[!sample, ]
+#write.csv(model, '../data/processed/model_data.csv')
+#write.csv(explore, '../data/processed/explore_data.csv')
+model_data
+```
+
+## Imports
+
+```{r reading in train and test, message= FALSE}
+model <- read_csv("../data/processed/model_data.csv")
+explore<- read_csv("../data/processed/explore_data.csv")
+```
+
+## Basic Model
+
+```{r model1: any meat}
+model1 <- lm(total_sales ~ is_vegetarian + ingredeint_count + month + month_02 + month_03 + month_04 + month_05 + month_06 + month_07 + month_08 + month_09 + month_10 + month_11 + month_12, data = model)
+summary(model1)
+```
+
+## Intermediate Model
+
+```{r model2: number of meats}
+model2 <- lm(total_sales ~ meat_count + meat_count2 + ingredeint_count + alt_sauce + alt_cheese + month + month_02 + month_03 + month_04 + month_05 + month_06 + month_07 + month_08 + month_09 + month_10 + month_11 + month_12, data = model)
+summary(model2)
+```
+
+## Advanced Model
+
+```{r}
+model3 <- lm(total_sales ~ ingredeint_count + alt_sauce + alt_cheese + meat_sliced_ham + meat_pepperoni + meat_bacon + meat_calabrese_salami + meat_barbecued_chicken + meat_italian_sausage + meat_chorizo_sausage + meat_prosciutto + meat_慛duja_salami + meat_pancetta + meat_chicken + meat_beef_chuck_roast + meat_capocollo + meat_genoa_salami + meat_prosciutto_di_san_daniele + meat_coarse_sicilian_salami + meat_luganega_sausage + meat_soppressata_salami + month + month_02 + month_03 + month_04 + month_05 + month_06 + month_07 + month_08 + month_09 + month_10 + month_11 + month_12, data = model)
+summary(model3)
+```
+
+## Stargazer Table
+
+```{r}
+models_list <- list(model1, model2, model3)
+
+covariate_labels <- c("Vegetarian", "Meat Count", "Meat Count$^2$", "Ingredient Count", "Alternate Sauce", "Alternate Cheese", "Month of Year", "Intercept")
+
+omit <- c("meat_sliced_ham", "meat_pepperoni", "meat_bacon", "meat_calabrese_salami", "meat_barbecued_chicken", "meat_italian_sausage", "meat_chorizo_sausage", "meat_prosciutto", "meat_慛duja_salami", "meat_pancetta", "meat_chicken", "meat_beef_chuck_roast", "meat_capocollo", "meat_genoa_salami", "meat_prosciutto_di_san_daniele", "meat_coarse_sicilian_salami", "meat_luganega_sausage", "meat_soppressata_salami", "month_02", "month_03", "month_04", "month_05", "month_06", "month_07", "month_08", "month_09", "month_10", "month_11", "month_12")
+
+
+stargazer(models_list, title = "Estimated Regressions",
+          align = TRUE,       
+          dep.var.caption = "Dependent Variable:",  
+          dep.var.labels.include = TRUE,           
+          covariate.labels = covariate_labels,  
+          dep.var.labels = "Total Sales ($)",  
+          omit = omit,
+          #add.lines = list(c("Hot Coded Month", "$\\checkmark$", "$\\checkmark$")),
+          add.lines = list(c("Month Control", "$\\checkmark$", "$\\checkmark$", "$\\checkmark$"), c("Individual Meats", "", "", "$\\checkmark$"), c("\\hline", "", "")),
+          omit.stat = c("f"),
+          #out = "regression_table.tex"  # Output the LaTeX code to a .tex file
+          #type = "text"
+          type = "latex"
+          )
+```
