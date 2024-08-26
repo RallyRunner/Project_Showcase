@@ -2,11 +2,20 @@
 Collective repository of personal &amp; collaborative projects I've done during the MIDS program at UC Berkeley & during my undergraduate studies at Northeastern University.
 
 # Projects
+### Applied Machine Learning
+"Spotify Genre Prediction" final project which explores various models to predict a song's genre based on audio characteristics.
+
+### Data Engineering
+"AGM NoSQL Business Case Scenarios" final project to apply data engineering concepts and pipelines using Docker, Neo4j, Redis, MongoDB, SQL, etc. to help enhance customer experience for a food delivery company.
+
 ### Database Design Project
 Designed and implemented a database using PostgreSQL to fit the needs of a car rental company.
 
 ### EvoTA
-Programming project using Object Oriented Programming and Evolutionary Computing algorithms to help professors solve their teaching assistant allocation issues.
+Programming project using object-oriented programming and evolutionary computing algorithms to help professors solve their teaching assistant allocation issues.
+
+### ML at Scale
+"Flight Delay Prediction" final project to apply distributed machine learning libraries such as PySpark and MLLib using flight data from 2015 to 2019.
 
 ### Statistics
 Projects related to statistical concepts using R.  
