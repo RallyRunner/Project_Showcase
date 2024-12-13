@@ -9,3 +9,5 @@ Models such CNNs, BERTs, T5, and GPT were all explored. The final pipeline used 
 Dataset: Webscraped from a community-driven ToS higlighter called ToS:DR
 
 ### Repo Files:
+Each folder contains the steps we used to build up to the final pipeline. This includes data collection, preprocessing, model training, and model evaluation.
+The final report can be seen under the reports folder.
