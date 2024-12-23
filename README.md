@@ -4,6 +4,7 @@ Collective repository of personal &amp; collaborative projects I've done during 
 # Projects
 ### Applied Machine Learning
 "Spotify Genre Prediction" final project which explores various models to predict a song's genre based on audio characteristics.
+"Predicting Auto Insurance Upselling" project which explores various models (XGBoost, GLMs) to predict if a current customer will purchase additional auto insurance.
 
 ### Computer Vision
 "Mars Terrain Classification" final project which explores building models for image classification based on an image's various features such as HOG, SIFT Bag of Visual Words, and feature embeddings from a pre-trained neural network.
